@@ -41,8 +41,8 @@ public class IconRetrofit {
                 .client(client)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
                 .addConverterFactory(GsonConverterFactory.create(gson));
-        Retrofit gankRest = builder.build();
-        serverService = gankRest.create(ServerApi.class);
+        Retrofit retrofit = builder.build();
+        serverService = retrofit.create(ServerApi.class);
     }
     public ServerApi getServerService() {
         return serverService;

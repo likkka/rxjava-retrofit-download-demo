@@ -3,7 +3,8 @@ package com.example.rio.icontools.icontools.bean;
 import android.graphics.Bitmap;
 
 /**
- * Created by rio on 17-6-21.
+ * Created by huangminzhi on 17-6-21.
+ * 保存下载内容的数据结构
  */
 
 public class DownloadBean {

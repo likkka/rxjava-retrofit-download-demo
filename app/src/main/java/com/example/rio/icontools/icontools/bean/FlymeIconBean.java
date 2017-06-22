@@ -2,6 +2,7 @@ package com.example.rio.icontools.icontools.bean;
 
 /**
  * Created by huangminzhi on 17-6-20.
+ * 和数据服务器对接的字段
  */
 
 public class FlymeIconBean {

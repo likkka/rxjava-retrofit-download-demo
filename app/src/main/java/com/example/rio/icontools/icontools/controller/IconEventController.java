@@ -1,9 +1,13 @@
 package com.example.rio.icontools.icontools.controller;
 
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.PersistableBundle;
+import android.support.annotation.Nullable;
 
 import com.example.rio.icontools.icontools.bean.DownloadBean;
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
@@ -25,13 +29,25 @@ import rx.schedulers.Schedulers;
 
 /**
  * Created by huangminzhi on 17-6-20.
- *
+ * 客户端的控制中心，
+ * 主要业务
+ * 1.下载单个图标
+ * 2.查询所有图标是否需要更新
+ * 3.图标版本号数据的保存和更新
+ * 4.下载失败定时再重新下载的处理
  */
 
 public class IconEventController implements IconBo{
+    private static final long DEFAULT_INTERVAL_CHECK_TIME = 1000 * 60 * 60 * 24 * 3;
+    private static final long INTERVAL_CHECK_TIME = DEFAULT_INTERVAL_CHECK_TIME;
+    private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3;
+    public static final int JOB_INTERVAL_CHECK = 1;
+    public static final int JOB_RESTART_DOWNLOAD = 2;
+    public static final String KEY_PACKAGE = "package";
     private Context mContext = null;
     private static volatile int DPI = -1;
     PreferencesLoader prefLoader = null;
+    JobScheduler jobScheduler = null;
     int TYPE_LAUNCHER = 0;
     int TYPE_STATUS = 1;
 
@@ -62,32 +78,6 @@ public class IconEventController implements IconBo{
                 .subscribe(finishA);
     }
 
-    private synchronized void updateVersion(DownloadBean downloadBean) {
-        if (prefLoader == null && mContext == null) {
-            return;
-        }
-        if (prefLoader == null) {
-            prefLoader = new PreferencesLoader(mContext);
-        }
-        if (downloadBean.launcherIcon != null) {
-            prefLoader.saveInt(downloadBean.pkgName + TYPE_LAUNCHER, downloadBean.launcherIconVersion);
-        }
-        if (downloadBean.statusIcon != null) {
-            prefLoader.saveInt(downloadBean.pkgName + TYPE_STATUS, downloadBean.statusBarIconVersion);
-        }
-    }
-
-    private synchronized int getVersion(String data, int type) {
-        if (prefLoader == null && mContext == null) {
-            return PreferencesLoader.DEFAULT_VALUE;
-        }
-        if (prefLoader == null) {
-            prefLoader = new PreferencesLoader(mContext);
-        }
-
-        return prefLoader.getInt(data + type);
-    }
-
     @Override
     public void updateIcons(Context context, ArrayList<String> data) {
 
@@ -97,6 +87,52 @@ public class IconEventController implements IconBo{
     public void checkIcons(Context context) {
 
     }
+
+    @Override
+    public void setScheduleCheck(Context context) {
+        if (mContext == null) {
+            mContext = context;
+        }
+        startScheduler(JOB_INTERVAL_CHECK, null);
+    }
+
+    /**
+     * 更新图标版本号
+     * @param downloadBean
+     */
+    private synchronized void updateVersion(DownloadBean downloadBean) {
+        if (prefLoader == null && mContext == null) {
+            return;
+        }
+        if (prefLoader == null) {
+            prefLoader = new PreferencesLoader(mContext);
+        }
+        if (downloadBean.launcherIcon != null) {
+            prefLoader.updateVersion(downloadBean.pkgName + TYPE_LAUNCHER, downloadBean.launcherIconVersion);
+        }
+        if (downloadBean.statusIcon != null) {
+            prefLoader.updateVersion(downloadBean.pkgName + TYPE_STATUS, downloadBean.statusBarIconVersion);
+        }
+    }
+
+    /**
+     * 获取图标版本号
+     * @param data
+     * @param type
+     * @return
+     */
+    private synchronized int getVersion(String data, int type) {
+        if (prefLoader == null && mContext == null) {
+            return PreferencesLoader.DEFAULT_VALUE;
+        }
+        if (prefLoader == null) {
+            prefLoader = new PreferencesLoader(mContext);
+        }
+
+        return prefLoader.getVersion(data + type);
+    }
+
+
 
     private void notifyChange() {
         //todo notify launcher to reget icon
@@ -111,13 +147,14 @@ public class IconEventController implements IconBo{
         }
     }
 
-    private Func1<String, Call<FlymeIconBean>> str2beanF = new Func1<String, Call<FlymeIconBean>>() {
+    private Func1<String, FlymeIconBean> str2beanF = new Func1<String, FlymeIconBean>() {
         @Override
-        public Call<FlymeIconBean> call(String s) {
+        public FlymeIconBean call(String s) {
             try {
-                return getServerSingleton().fetchInfos(s, DPI);
+                Call<FlymeIconBean> callBean = getServerSingleton().fetchInfos(s, DPI);
+                return callBean.execute().body();
             } catch (Exception e) {
-                //todo 待下载队列
+                startScheduler(JOB_RESTART_DOWNLOAD, s);
                 e.printStackTrace();
                 return null;
             }
@@ -125,12 +162,12 @@ public class IconEventController implements IconBo{
     };
 
 
-    private Func1<Call<FlymeIconBean>, DownloadBean> bean2BitmapsF = new Func1<Call<FlymeIconBean>, DownloadBean>() {
+    private Func1<FlymeIconBean, DownloadBean> bean2BitmapsF = new Func1<FlymeIconBean, DownloadBean>() {
         @Override
-        public DownloadBean call(Call<FlymeIconBean> flymeIconBeanCall) {
+        public DownloadBean call(FlymeIconBean bean) {
             DownloadBean bitmapBean = new DownloadBean();
+
             try {
-                FlymeIconBean bean = flymeIconBeanCall.execute().body();
                 int lVer = getVersion(bean.getmPkgName(), TYPE_LAUNCHER);
                 int sVer = getVersion(bean.getmPkgName(), TYPE_STATUS);
                 int serverLver = bean.getmLauncherIconVersion();
@@ -155,7 +192,7 @@ public class IconEventController implements IconBo{
                 }
                 bitmapBean.pkgName = bean.getmPkgName();
             } catch (Exception e) {
-                //todo 待下载队列
+                startScheduler(JOB_RESTART_DOWNLOAD, bean.getmPkgName());
                 e.printStackTrace();
             }
             return bitmapBean;
@@ -169,9 +206,9 @@ public class IconEventController implements IconBo{
         }
     };
 
-    private Func1<Call<FlymeIconBean>, Boolean> ifBeanValidF = new Func1<Call<FlymeIconBean>, Boolean>() {
+    private Func1<FlymeIconBean, Boolean> ifBeanValidF = new Func1<FlymeIconBean, Boolean>() {
         @Override
-        public Boolean call(Call<FlymeIconBean> bean) {
+        public Boolean call(FlymeIconBean bean) {
             return bean != null;
         }
     };
@@ -179,8 +216,8 @@ public class IconEventController implements IconBo{
     private Action1<DownloadBean> saveDownloadBitmapn = new Action1<DownloadBean>() {
         @Override
         public void call(DownloadBean download) {
-            IconUtils.saveBitmap(0, download.pkgName, download.launcherIcon);
-            IconUtils.saveBitmap(1, download.pkgName, download.statusIcon);
+            IconUtils.saveBitmap(TYPE_LAUNCHER, download.pkgName, download.launcherIcon);
+            IconUtils.saveBitmap(TYPE_STATUS, download.pkgName, download.statusIcon);
         }
     };
 
@@ -204,6 +241,50 @@ public class IconEventController implements IconBo{
         } catch (Exception e) {
             //...
         }
+    }
+
+    private JobScheduler getScheduler() {
+        if (jobScheduler != null) {
+            return jobScheduler;
+        }
+        if (mContext == null) {
+            return null;
+        }
+        jobScheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        return jobScheduler;
+    }
+
+    private void startScheduler(int jobId, @Nullable String pkg) {
+        JobScheduler scheduler = getScheduler();
+        if (scheduler == null) {
+            return;
+        }
+        ComponentName cn = new ComponentName(mContext.getPackageName(), ScheduleService.class.getName());
+        JobInfo.Builder builder = null;
+        switch (jobId) {
+            case JOB_INTERVAL_CHECK:
+                builder = new JobInfo.Builder(JOB_INTERVAL_CHECK, cn);
+                builder.setPeriodic(INTERVAL_CHECK_TIME);
+                builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+                builder.setPersisted(false);
+                break;
+
+            case JOB_RESTART_DOWNLOAD:
+                if (pkg == null) return;
+                builder = new JobInfo.Builder(JOB_RESTART_DOWNLOAD, cn);
+                builder.setPeriodic(INTERVAL_REDOWNLOAD_TIME);
+                builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+                builder.setPersisted(true);
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putString(KEY_PACKAGE, pkg);
+                builder.setExtras(bundle);
+                break;
+            default:
+                break;
+        }
+
+        if (builder == null) return;
+        scheduler.schedule(builder.build());
     }
 
 

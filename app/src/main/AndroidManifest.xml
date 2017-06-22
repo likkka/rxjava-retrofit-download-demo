@@ -12,8 +12,14 @@
             <intent-filter>
                 <action android:name="com.flyme.iconevent.pull"></action>
                 <action android:name="com.flyme.iconevent.check"></action>
+                <action android:name="android.intent.action.BOOT_COMPLETED"></action>
             </intent-filter>
         </receiver>
+        <service
+            android:name="icontools.controller.ScheduleService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
 </manifest>

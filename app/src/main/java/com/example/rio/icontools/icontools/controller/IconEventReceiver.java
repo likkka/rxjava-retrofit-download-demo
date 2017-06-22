@@ -29,6 +29,8 @@ public class IconEventReceiver extends BroadcastReceiver {
             IconEventController.getInstance().pullIcon(context, pkgName);
         } else if (TextUtils.equals(action, ACTION_ICONCHECK)) {
             IconEventController.getInstance().checkIcons(context);
+        } else if (TextUtils.equals(action, Intent.ACTION_BOOT_COMPLETED)) {
+            IconEventController.getInstance().setScheduleCheck(context);
         }
     }
 }
