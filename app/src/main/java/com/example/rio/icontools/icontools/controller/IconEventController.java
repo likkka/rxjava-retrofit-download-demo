@@ -139,8 +139,7 @@ public class IconEventController implements IconBo{
                 if (serverLver > lVer) {
                     String url = bean.getmStatusIconURL();
                     if(url != null) {
-                        Bitmap lB = BitmapFactory.decodeStream(getUrlStream(url));
-                        bitmapBean.launcherIcon = lB;
+                        bitmapBean.launcherIcon = BitmapFactory.decodeStream(getUrlStream(url));
                         bitmapBean.launcherIconVersion = serverLver;
                         bitmapBean.isValid = true;
                     }
@@ -148,8 +147,7 @@ public class IconEventController implements IconBo{
                 if (serverLver > sVer) {
                     String url = bean.getmStatusIconURL();
                     if(url != null) {
-                        Bitmap sB = BitmapFactory.decodeStream(getUrlStream(url);
-                        bitmapBean.statusIcon = sB;
+                        bitmapBean.statusIcon = BitmapFactory.decodeStream(getUrlStream(url));
                         bitmapBean.statusBarIconVersion = serverSver;
                         bitmapBean.isValid = true;
 
