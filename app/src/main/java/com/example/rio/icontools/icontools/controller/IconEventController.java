@@ -137,14 +137,7 @@ public class IconEventController implements IconBo{
         //todo notify launcher to reget icon
     }
 
-    private InputStream getUrlStream(String url) {
-        try {
-            return getServerSingleton().getIcon(url).execute().body().byteStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+
 
     private Func1<String, FlymeIconBean> str2beanF = new Func1<String, FlymeIconBean>() {
         @Override
@@ -185,11 +178,11 @@ public class IconEventController implements IconBo{
                     String lUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_LAUNCHER);
                     String sUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_STATUS);
                     if(lUrl != null) {
-                        bitmapBean.launcherIcon = BitmapFactory.decodeStream(getUrlStream(lUrl));
+                        bitmapBean.lIs = getServerSingleton().getIcon(lUrl).execute().body();
                         bitmapBean.isValid = true;
                     }
                     if (sUrl != null) {
-                        bitmapBean.statusIcon = BitmapFactory.decodeStream(getUrlStream(sUrl));
+                        bitmapBean.sIs = getServerSingleton().getIcon(sUrl).execute().body();
                         bitmapBean.isValid = true;
                     }
                     bitmapBean.updateAt = serverUpdate;
@@ -220,8 +213,8 @@ public class IconEventController implements IconBo{
     private Action1<DownloadBean> saveDownloadBitmapn = new Action1<DownloadBean>() {
         @Override
         public void call(DownloadBean download) {
-            IconUtils.saveBitmap(IconUtils.TYPE_LAUNCHER, download.pkgName, download.launcherIcon);
-            IconUtils.saveBitmap(IconUtils.TYPE_STATUS, download.pkgName, download.statusIcon);
+            IconUtils.saveBitmap(IconUtils.TYPE_LAUNCHER, download.pkgName, download.lIs);
+            IconUtils.saveBitmap(IconUtils.TYPE_STATUS, download.pkgName, download.sIs);
         }
     };
 

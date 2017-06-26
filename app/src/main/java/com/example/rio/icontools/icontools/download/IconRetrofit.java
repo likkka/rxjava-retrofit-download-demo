@@ -1,10 +1,7 @@
 package com.example.rio.icontools.icontools.download;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
+import com.example.rio.icontools.icontools.utils.InputStreamConverterFactory;
 import java.util.concurrent.TimeUnit;
-
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -22,10 +19,6 @@ public class IconRetrofit {
     private static final String BASE_URL = "http://api-baas.flyme.cn/v1/api/schema/";
     private static final String BASE_URL_DEBUG = "http://172.17.140.199:92/v1/api/schema/";
 
-//    final static Gson gson = new GsonBuilder()
-//            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-//            .serializeNulls()
-//            .create();
 
     public IconRetrofit() {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
@@ -38,9 +31,10 @@ public class IconRetrofit {
         OkHttpClient client = httpClient.build();
 
         Retrofit.Builder builder = new Retrofit.Builder();
-        builder.baseUrl(BASE_URL)
+        builder.baseUrl(BASE_URL_DEBUG)
                 .client(client)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
+                .addConverterFactory(InputStreamConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create());
         Retrofit retrofit = builder.build();
         serverService = retrofit.create(ServerApi.class);

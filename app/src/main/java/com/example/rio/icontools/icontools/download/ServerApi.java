@@ -1,11 +1,14 @@
 package com.example.rio.icontools.icontools.download;
 
+import android.graphics.Bitmap;
+
 import com.example.rio.icontools.icontools.bean.BaseEntity;
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
 import com.squareup.okhttp.ResponseBody;
 
 import org.json.JSONArray;
 
+import java.io.InputStream;
 import java.util.HashMap;
 
 import retrofit2.Call;
@@ -25,5 +28,5 @@ public interface ServerApi {
     Call<BaseEntity> fetchInfos(@Header("MZ-Sign") String appkey, @Query("where") String s);
 
     @GET
-    Call<ResponseBody> getIcon(@Url String url);
+    Call<InputStream> getIcon(@Url String url);
 }

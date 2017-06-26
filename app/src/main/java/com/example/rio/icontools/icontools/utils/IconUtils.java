@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
 
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +31,7 @@ public class IconUtils {
     public static int getDpi(Context context) {
         return context.getResources().getDisplayMetrics().densityDpi;
     }
-    public static void saveBitmap(int type, String name, Bitmap bitmap) {
+    public static void saveBitmap(int type, String name, InputStream inputStream) {
 
     }
 
