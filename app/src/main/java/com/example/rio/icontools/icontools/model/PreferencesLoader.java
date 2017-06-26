@@ -10,7 +10,7 @@ import android.content.SharedPreferences;
 
 public class PreferencesLoader {
     private static final String ICON_VERSION_PREF = "icon_versions";
-    public static int DEFAULT_VALUE = -1;
+    public static long DEFAULT_VALUE = -1;
 
     private SharedPreferences mVersionPref;
     private Context mContext;
@@ -22,13 +22,13 @@ public class PreferencesLoader {
     }
 
 
-    public int getVersion(String key) {
-        return mVersionPref.getInt(key, DEFAULT_VALUE);
+    public long getVersion(String key) {
+        return mVersionPref.getLong(key, DEFAULT_VALUE);
     }
 
-    public void updateVersion(String key, int value) {
+    public void updateVersion(String key, long value) {
         SharedPreferences.Editor editor = mVersionPref.edit();
-        editor.putInt(key, value);
+        editor.putLong(key, value);
         editor.apply();
     }
 

@@ -9,8 +9,7 @@ import android.graphics.Bitmap;
 
 public class DownloadBean {
      public String pkgName;
-     public int launcherIconVersion;
-     public int statusBarIconVersion;
+     public long updateAt;
      public Bitmap launcherIcon;
      public Bitmap statusIcon;
      public boolean isValid;

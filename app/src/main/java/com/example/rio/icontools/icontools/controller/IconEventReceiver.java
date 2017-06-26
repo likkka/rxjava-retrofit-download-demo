@@ -10,7 +10,7 @@ import android.text.TextUtils;
  */
 
 public class IconEventReceiver extends BroadcastReceiver {
-    String ACTION_ICONPULL = "com.flyme.iconevent.pull";
+    public static String ACTION_ICONPULL = "com.flyme.iconevent.pull";
     String ACTION_ICONCHECK = "com.flyme.iconevent.check";
     String KEY_PKGNAME = "package";
 
@@ -24,7 +24,7 @@ public class IconEventReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (TextUtils.equals(action, ACTION_ICONPULL)) {
             if (pkgName == null) {
-                return;
+                pkgName = "com.ruguoapp.jike";
             }
             IconEventController.getInstance().pullIcon(context, pkgName);
         } else if (TextUtils.equals(action, ACTION_ICONCHECK)) {

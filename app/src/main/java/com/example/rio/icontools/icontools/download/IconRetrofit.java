@@ -19,12 +19,13 @@ import rx.schedulers.Schedulers;
 public class IconRetrofit {
     final ServerApi serverService;
     boolean isDebug = true;
-    private static final String BASE_URL = "com.meizu.flyme";
+    private static final String BASE_URL = "http://api-baas.flyme.cn/v1/api/schema/";
+    private static final String BASE_URL_DEBUG = "http://172.17.140.199:92/v1/api/schema/";
 
-    final static Gson gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            .serializeNulls()
-            .create();
+//    final static Gson gson = new GsonBuilder()
+//            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+//            .serializeNulls()
+//            .create();
 
     public IconRetrofit() {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
@@ -40,7 +41,7 @@ public class IconRetrofit {
         builder.baseUrl(BASE_URL)
                 .client(client)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
-                .addConverterFactory(GsonConverterFactory.create(gson));
+                .addConverterFactory(GsonConverterFactory.create());
         Retrofit retrofit = builder.build();
         serverService = retrofit.create(ServerApi.class);
     }

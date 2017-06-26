@@ -8,17 +8,22 @@ import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
+import com.example.rio.icontools.icontools.bean.BaseEntity;
 import com.example.rio.icontools.icontools.bean.DownloadBean;
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
 import com.example.rio.icontools.icontools.download.IconRetrofit;
 import com.example.rio.icontools.icontools.utils.IconUtils;
 import com.example.rio.icontools.icontools.download.ServerApi;
 import com.example.rio.icontools.icontools.model.PreferencesLoader;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import retrofit2.Call;
 import rx.Observable;
@@ -44,12 +49,12 @@ public class IconEventController implements IconBo{
     public static final int JOB_INTERVAL_CHECK = 1;
     public static final int JOB_RESTART_DOWNLOAD = 2;
     public static final String KEY_PACKAGE = "package";
+    private static final String TAG = "IconEventController";
     private Context mContext = null;
     private static volatile int DPI = -1;
     PreferencesLoader prefLoader = null;
     JobScheduler jobScheduler = null;
-    int TYPE_LAUNCHER = 0;
-    int TYPE_STATUS = 1;
+    public static boolean DEBUG = true;
 
     private IconEventController() {
     }
@@ -107,21 +112,15 @@ public class IconEventController implements IconBo{
         if (prefLoader == null) {
             prefLoader = new PreferencesLoader(mContext);
         }
-        if (downloadBean.launcherIcon != null) {
-            prefLoader.updateVersion(downloadBean.pkgName + TYPE_LAUNCHER, downloadBean.launcherIconVersion);
-        }
-        if (downloadBean.statusIcon != null) {
-            prefLoader.updateVersion(downloadBean.pkgName + TYPE_STATUS, downloadBean.statusBarIconVersion);
-        }
+        prefLoader.updateVersion(downloadBean.pkgName, downloadBean.updateAt);
     }
 
     /**
      * 获取图标版本号
      * @param data
-     * @param type
      * @return
      */
-    private synchronized int getVersion(String data, int type) {
+    private synchronized long getVersion(String data) {
         if (prefLoader == null && mContext == null) {
             return PreferencesLoader.DEFAULT_VALUE;
         }
@@ -129,7 +128,7 @@ public class IconEventController implements IconBo{
             prefLoader = new PreferencesLoader(mContext);
         }
 
-        return prefLoader.getVersion(data + type);
+        return prefLoader.getVersion(data);
     }
 
 
@@ -151,8 +150,18 @@ public class IconEventController implements IconBo{
         @Override
         public FlymeIconBean call(String s) {
             try {
-                Call<FlymeIconBean> callBean = getServerSingleton().fetchInfos(s, DPI);
-                return callBean.execute().body();
+                String appKey = IconUtils.makeAppKey();
+
+                JsonObject jo = new JsonObject();
+                jo.addProperty("packageName", s);
+
+                Call<BaseEntity> callBean = getServerSingleton().fetchInfos(appKey,jo.toString());
+                if (DEBUG) {
+                    Log.e(TAG, "appkey: " + appKey);
+                    Log.e(TAG, "packageName: " + s);
+                }
+                BaseEntity entity = callBean.execute().body();
+                return entity.getData().values.get(0);
             } catch (Exception e) {
                 startScheduler(JOB_RESTART_DOWNLOAD, s);
                 e.printStackTrace();
@@ -166,33 +175,28 @@ public class IconEventController implements IconBo{
         @Override
         public DownloadBean call(FlymeIconBean bean) {
             DownloadBean bitmapBean = new DownloadBean();
-
+            if (DEBUG) {
+                Log.e(TAG, "get bean: " + bean.toString());
+            }
             try {
-                int lVer = getVersion(bean.getmPkgName(), TYPE_LAUNCHER);
-                int sVer = getVersion(bean.getmPkgName(), TYPE_STATUS);
-                int serverLver = bean.getmLauncherIconVersion();
-                int serverSver = bean.getmStatusBarIconVersion();
-
-                if (serverLver > lVer) {
-                    String url = bean.getmStatusIconURL();
-                    if(url != null) {
-                        bitmapBean.launcherIcon = BitmapFactory.decodeStream(getUrlStream(url));
-                        bitmapBean.launcherIconVersion = serverLver;
+                long  lastUpdate = getVersion(bean.getPackageName());
+                long  serverUpdate = bean.getUpdateAt();
+                if (serverUpdate > lastUpdate) {
+                    String lUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_LAUNCHER);
+                    String sUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_STATUS);
+                    if(lUrl != null) {
+                        bitmapBean.launcherIcon = BitmapFactory.decodeStream(getUrlStream(lUrl));
                         bitmapBean.isValid = true;
                     }
-                }
-                if (serverLver > sVer) {
-                    String url = bean.getmStatusIconURL();
-                    if(url != null) {
-                        bitmapBean.statusIcon = BitmapFactory.decodeStream(getUrlStream(url));
-                        bitmapBean.statusBarIconVersion = serverSver;
+                    if (sUrl != null) {
+                        bitmapBean.statusIcon = BitmapFactory.decodeStream(getUrlStream(sUrl));
                         bitmapBean.isValid = true;
-
                     }
+                    bitmapBean.updateAt = serverUpdate;
                 }
-                bitmapBean.pkgName = bean.getmPkgName();
+                bitmapBean.pkgName = bean.getPackageName();
             } catch (Exception e) {
-                startScheduler(JOB_RESTART_DOWNLOAD, bean.getmPkgName());
+                startScheduler(JOB_RESTART_DOWNLOAD, bean.getPackageName());
                 e.printStackTrace();
             }
             return bitmapBean;
@@ -216,10 +220,11 @@ public class IconEventController implements IconBo{
     private Action1<DownloadBean> saveDownloadBitmapn = new Action1<DownloadBean>() {
         @Override
         public void call(DownloadBean download) {
-            IconUtils.saveBitmap(TYPE_LAUNCHER, download.pkgName, download.launcherIcon);
-            IconUtils.saveBitmap(TYPE_STATUS, download.pkgName, download.statusIcon);
+            IconUtils.saveBitmap(IconUtils.TYPE_LAUNCHER, download.pkgName, download.launcherIcon);
+            IconUtils.saveBitmap(IconUtils.TYPE_STATUS, download.pkgName, download.statusIcon);
         }
     };
+
 
     Action1<DownloadBean> finishA = new Action1<DownloadBean>() {
         @Override
@@ -274,7 +279,7 @@ public class IconEventController implements IconBo{
                 builder = new JobInfo.Builder(JOB_RESTART_DOWNLOAD, cn);
                 builder.setPeriodic(INTERVAL_REDOWNLOAD_TIME);
                 builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-                builder.setPersisted(true);
+//                builder.setPersisted(true); //todo 非系统应用无法成功申请boot-complete权限？
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putString(KEY_PACKAGE, pkg);
                 builder.setExtras(bundle);
