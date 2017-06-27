@@ -6,6 +6,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,6 +16,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by rio on 17-6-21.
@@ -127,5 +130,22 @@ public class IconUtils {
         } else {
             return type == TYPE_LAUNCHER ? bean.getIconM() : bean.getsIconM();
         }
+    }
+
+    public static String unGson2Pkg(String s) {
+        String reg = "\"packageName\":\"(.*)\"";
+        Pattern p = Pattern.compile(reg);
+        Matcher m = p.matcher(s);
+        if (m.find()) {
+            return m.group();
+        }
+        return null;
+    }
+
+    public static void main(String[] args) {
+        JsonObject jo = new JsonObject();
+        jo.addProperty("packageName", "com.meizu.launcher");
+        String s = jo.toString();
+        System.out.print("test: " + unGson2Pkg(s));
     }
 }

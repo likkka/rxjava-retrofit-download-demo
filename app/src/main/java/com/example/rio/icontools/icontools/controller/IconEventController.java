@@ -131,7 +131,7 @@ public class IconEventController implements IconBo{
             }
             return result;
         }
-    }
+    };
 
     @Override
     public void setScheduleCheck(Context context) {
@@ -226,6 +226,7 @@ public class IconEventController implements IconBo{
             } catch (Exception e) {
                 if (!s.contains("$in")) {
                     // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
+                    String pkg = IconUtils.unGson2Pkg(s);
                     startScheduler(JOB_RESTART_DOWNLOAD, s);
                 }
                 e.printStackTrace();
