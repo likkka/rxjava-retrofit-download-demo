@@ -31,7 +31,7 @@ public class IconRetrofit {
         OkHttpClient client = httpClient.build();
 
         Retrofit.Builder builder = new Retrofit.Builder();
-        builder.baseUrl(BASE_URL_DEBUG)
+        builder.baseUrl(BASE_URL)
                 .client(client)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
                 .addConverterFactory(InputStreamConverterFactory.create())

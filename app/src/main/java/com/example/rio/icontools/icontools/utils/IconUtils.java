@@ -7,6 +7,10 @@ import android.util.Log;
 
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -32,7 +36,29 @@ public class IconUtils {
         return context.getResources().getDisplayMetrics().densityDpi;
     }
     public static void saveBitmap(int type, String name, InputStream inputStream) {
+        File f = new File("/sdcard/" + name + ".png");
+        if (f.exists()) {
+            f.delete();
+        } else {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(f);
+            int bytesRead = 0;
+            byte[] buffer = new byte[1024 * 10];
+            while ((bytesRead = inputStream.read(buffer, 0, 8192)) != -1) {
+                fos.write(buffer, 0, bytesRead);
+            }
+            fos.close();
+            inputStream.close();
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static String makeAppKey() {

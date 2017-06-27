@@ -11,7 +11,7 @@ import android.text.TextUtils;
 
 public class IconEventReceiver extends BroadcastReceiver {
     public static String ACTION_ICONPULL = "com.flyme.iconevent.pull";
-    String ACTION_ICONCHECK = "com.flyme.iconevent.check";
+    public static String ACTION_ICONCHECK = "com.flyme.iconevent.check";
     String KEY_PKGNAME = "package";
 
     @Override

@@ -5,9 +5,12 @@ import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.ResolveInfo;
 import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.example.rio.icontools.icontools.bean.BaseEntity;
@@ -21,9 +24,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 
 import retrofit2.Call;
 import rx.Observable;
@@ -48,7 +50,7 @@ public class IconEventController implements IconBo{
     private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3;
     public static final int JOB_INTERVAL_CHECK = 1;
     public static final int JOB_RESTART_DOWNLOAD = 2;
-    public static final String KEY_PACKAGE = "package";
+    public static final String KEY_PACKAGE = "packageName";
     private static final String TAG = "IconEventController";
     private Context mContext = null;
     private static volatile int DPI = -1;
@@ -74,11 +76,12 @@ public class IconEventController implements IconBo{
         Observable
                 .just(data)
                 .subscribeOn(Schedulers.io())
-                .map(str2beanF)
-                .filter(ifBeanValidF)
-                .map(bean2BitmapsF)
-                .filter(ifBitmapValiedF)
-                .doOnNext(saveDownloadBitmapn)
+                .map(str2whereQueryStr)
+                .map(queryStr2FlymeBeanF)
+                .filter(ifListValiedF)
+                .map(flymeBean2DownloadBeansF)
+                .filter(ifListValiedF)
+                .doOnNext(saveDownloadBitmapA)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(finishA);
     }
@@ -89,8 +92,45 @@ public class IconEventController implements IconBo{
     }
 
     @Override
-    public void checkIcons(Context context) {
+    public void checkIcons(final Context context) {
+        if (context == null) {
+            return;
+        }
+        if (mContext == null) {
+            mContext = context;
+        }
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> resolveInfoList = context.getPackageManager().queryIntentActivities(intent, 0);
+        Observable.just(resolveInfoList)
+                .map(resolve2strsF)
+                .subscribeOn(Schedulers.io())
+                .filter(ifListValiedF)
+                .map(strs2whereQueryStr)
+                .map(queryStr2FlymeBeanF)
+                .map(flymeBean2DownloadBeansF)
+                .filter(ifListValiedF)
+                .doOnNext(saveDownloadBitmapA)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(finishA);
+    }
 
+
+    /**
+     * 获取包名列表
+     */
+    Func1<List<ResolveInfo>, List<String>> resolve2strsF =  new Func1<List<ResolveInfo>, List<String>>() {
+        @Override
+        public List<String> call(List<ResolveInfo> resolveInfoList) {
+            ArrayList<String> result = new ArrayList<>();
+            for(ResolveInfo re : resolveInfoList) {
+                if (result.contains(re.activityInfo.packageName)) continue;
+                if ((re.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0)  continue;
+                if ((re.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0)  continue;
+                result.add(re.activityInfo.packageName);
+            }
+            return result;
+        }
     }
 
     @Override
@@ -102,17 +142,49 @@ public class IconEventController implements IconBo{
     }
 
     /**
-     * 更新图标版本号
-     * @param downloadBean
+     * 多个包名查询，创建query value
      */
-    private synchronized void updateVersion(DownloadBean downloadBean) {
+    Func1<List<String>, String> strs2whereQueryStr = new Func1<List<String>, String>() {
+        @Override
+        public String call(List<String> strings) {
+            JsonObject wrapper0 = new JsonObject();
+            JsonObject wrapper1 = new JsonObject();
+            JsonArray ja = new JsonArray();
+            for (String s : strings) ja.add(s);
+            wrapper1.add("$in", ja);
+            wrapper0.add(KEY_PACKAGE, wrapper1);
+            String where = wrapper0.toString();
+            return where;
+        }
+    };
+
+    /**
+     * 单个包名查询，创建query value
+     */
+    Func1<String, String> str2whereQueryStr = new Func1<String, String>() {
+        @Override
+        public String call(String s) {
+            JsonObject jo = new JsonObject();
+            jo.addProperty(KEY_PACKAGE, s);
+            return jo.toString();
+        }
+    };
+    
+    
+    /**
+     * 更新图标版本号
+     * @param downloadBeans
+     */
+    private synchronized void updateVersion(List<DownloadBean> downloadBeans) {
         if (prefLoader == null && mContext == null) {
             return;
         }
         if (prefLoader == null) {
             prefLoader = new PreferencesLoader(mContext);
         }
-        prefLoader.updateVersion(downloadBean.pkgName, downloadBean.updateAt);
+        for (DownloadBean downloadBean : downloadBeans) {
+            prefLoader.updateVersion(downloadBean.pkgName, downloadBean.updateAt);   
+        }
     }
 
     /**
@@ -139,24 +211,23 @@ public class IconEventController implements IconBo{
 
 
 
-    private Func1<String, FlymeIconBean> str2beanF = new Func1<String, FlymeIconBean>() {
+    private Func1<String, List<FlymeIconBean>> queryStr2FlymeBeanF = new Func1<String, List<FlymeIconBean>>() {
         @Override
-        public FlymeIconBean call(String s) {
+        public List<FlymeIconBean> call(String s) {
             try {
                 String appKey = IconUtils.makeAppKey();
-
-                JsonObject jo = new JsonObject();
-                jo.addProperty("packageName", s);
-
-                Call<BaseEntity> callBean = getServerSingleton().fetchInfos(appKey,jo.toString());
+                Call<BaseEntity> callBean = getServerSingleton().fetchInfos(appKey, s);
                 if (DEBUG) {
                     Log.e(TAG, "appkey: " + appKey);
-                    Log.e(TAG, "packageName: " + s);
+                    Log.e(TAG, KEY_PACKAGE + ": " + s);
                 }
                 BaseEntity entity = callBean.execute().body();
-                return entity.getData().values.get(0);
+                return entity.getData().values;
             } catch (Exception e) {
-                startScheduler(JOB_RESTART_DOWNLOAD, s);
+                if (!s.contains("$in")) {
+                    // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
+                    startScheduler(JOB_RESTART_DOWNLOAD, s);
+                }
                 e.printStackTrace();
                 return null;
             }
@@ -164,65 +235,73 @@ public class IconEventController implements IconBo{
     };
 
 
-    private Func1<FlymeIconBean, DownloadBean> bean2BitmapsF = new Func1<FlymeIconBean, DownloadBean>() {
+    /**
+     * 对比版本号，需要更新时
+     * 将fetchInfo传回的资源地址转为DownloadBean列表保存
+     */
+    private Func1<List<FlymeIconBean>, List<DownloadBean>> flymeBean2DownloadBeansF = new Func1<List<FlymeIconBean>, List<DownloadBean>>() {
         @Override
-        public DownloadBean call(FlymeIconBean bean) {
-            DownloadBean bitmapBean = new DownloadBean();
+        public List<DownloadBean> call(List<FlymeIconBean> beans) {
+            ArrayList<DownloadBean> result = new ArrayList<>();
+
             if (DEBUG) {
-                Log.e(TAG, "get bean: " + bean.toString());
+                Log.e(TAG, "get bean: " + TextUtils.join("," , beans));
             }
-            try {
-                long  lastUpdate = getVersion(bean.getPackageName());
-                long  serverUpdate = bean.getUpdateAt();
+            for (FlymeIconBean b : beans) {
+                long lastUpdate = getVersion(b.getPackageName());
+                long serverUpdate = b.getUpdateAt();
                 if (serverUpdate > lastUpdate) {
-                    String lUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_LAUNCHER);
-                    String sUrl = IconUtils.getUrl(bean, DPI, IconUtils.TYPE_STATUS);
-                    if(lUrl != null) {
-                        bitmapBean.lIs = getServerSingleton().getIcon(lUrl).execute().body();
-                        bitmapBean.isValid = true;
+                    DownloadBean bitmapBean = new DownloadBean();
+                    String lUrl = IconUtils.getUrl(b, DPI, IconUtils.TYPE_LAUNCHER);
+                    String sUrl = IconUtils.getUrl(b, DPI, IconUtils.TYPE_STATUS);
+                    try {
+                        if (lUrl != null) {
+                            bitmapBean.lIs = getServerSingleton().getIcon(lUrl).execute().body();
+                            bitmapBean.isValid = true;
+                        }
+                        if (sUrl != null) {
+                            bitmapBean.sIs = getServerSingleton().getIcon(sUrl).execute().body();
+                            bitmapBean.isValid = true;
+                        }
+                        bitmapBean.updateAt = serverUpdate;
+                        bitmapBean.pkgName = b.getPackageName();
+                        result.add(bitmapBean);
+                    } catch (Exception e) {
+                        startScheduler(JOB_RESTART_DOWNLOAD, b.getPackageName());
+                        e.printStackTrace();
                     }
-                    if (sUrl != null) {
-                        bitmapBean.sIs = getServerSingleton().getIcon(sUrl).execute().body();
-                        bitmapBean.isValid = true;
-                    }
-                    bitmapBean.updateAt = serverUpdate;
                 }
-                bitmapBean.pkgName = bean.getPackageName();
-            } catch (Exception e) {
-                startScheduler(JOB_RESTART_DOWNLOAD, bean.getPackageName());
-                e.printStackTrace();
             }
-            return bitmapBean;
+            return result;
         }
     };
 
-    private Func1<DownloadBean, Boolean> ifBitmapValiedF = new Func1<DownloadBean, Boolean>() {
+    private Func1<List, Boolean> ifListValiedF = new Func1<List, Boolean>() {
         @Override
-        public Boolean call(DownloadBean downloadBean) {
-            return downloadBean.isValid;
-        }
-    };
-
-    private Func1<FlymeIconBean, Boolean> ifBeanValidF = new Func1<FlymeIconBean, Boolean>() {
-        @Override
-        public Boolean call(FlymeIconBean bean) {
-            return bean != null;
-        }
-    };
-
-    private Action1<DownloadBean> saveDownloadBitmapn = new Action1<DownloadBean>() {
-        @Override
-        public void call(DownloadBean download) {
-            IconUtils.saveBitmap(IconUtils.TYPE_LAUNCHER, download.pkgName, download.lIs);
-            IconUtils.saveBitmap(IconUtils.TYPE_STATUS, download.pkgName, download.sIs);
+        public Boolean call(List list) {
+            return list != null && list.isEmpty();
         }
     };
 
 
-    Action1<DownloadBean> finishA = new Action1<DownloadBean>() {
+    /**
+     * 将网络数据保存到sdcard
+     */
+    private Action1<List<DownloadBean>> saveDownloadBitmapA = new Action1<List<DownloadBean>>() {
         @Override
-        public void call(DownloadBean downloadBean) {
-            updateVersion(downloadBean);
+        public void call(List<DownloadBean> downloads) {
+            for (DownloadBean download : downloads) {
+                IconUtils.saveBitmap(IconUtils.TYPE_LAUNCHER, download.pkgName, download.lIs);
+                IconUtils.saveBitmap(IconUtils.TYPE_STATUS, download.pkgName, download.sIs);
+            }
+        }
+    };
+
+
+    Action1<List<DownloadBean>> finishA = new Action1<List<DownloadBean>>() {
+        @Override
+        public void call(List<DownloadBean> downloadBeans) {
+            updateVersion(downloadBeans);
             notifyChange();
             updateFlymeIconTheme();
         }
