@@ -228,7 +228,7 @@ public class IconEventController implements IconBo{
                 if (!s.contains("$in")) {
                     // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
                     String pkg = IconUtils.unGson2Pkg(s);
-                    startScheduler(JOB_RESTART_DOWNLOAD, s);
+                    startScheduler(JOB_RESTART_DOWNLOAD, pkg);
                 }
                 e.printStackTrace();
                 return null;
@@ -384,4 +384,14 @@ public class IconEventController implements IconBo{
             return sServierSingleton;
         }
     }
+}
+/**
+ * Created by huangminzhi on 17-6-20.
+ * 客户端主要逻辑接口
+ */
+interface IconBo {
+    void pullIcon(Context context, String data);
+    void updateIcons(Context context, ArrayList<String> data);
+    void checkIcons(Context context);
+    void setScheduleCheck(Context context);
 }

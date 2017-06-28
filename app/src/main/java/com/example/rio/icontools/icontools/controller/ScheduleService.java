@@ -20,6 +20,7 @@ public class ScheduleService extends JobService {
                 String pkg = params.getExtras().getString(IconEventController.KEY_PACKAGE);
                 if(pkg == null) return true;
                 IconEventController.getInstance().pullIcon(getApplicationContext(), pkg);
+                break;
         }
         return false;
     }
