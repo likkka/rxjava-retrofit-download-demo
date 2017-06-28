@@ -86,11 +86,6 @@ public class IconManager implements IconEvent{
     }
 
     @Override
-    public void updateIcons(Context context, ArrayList<String> data) {
-
-    }
-
-    @Override
     public void checkIcons(final Context context) {
         if (context == null) {
             return;
@@ -390,7 +385,6 @@ public class IconManager implements IconEvent{
  */
 interface IconEvent {
     void pullIcon(Context context, String data);
-    void updateIcons(Context context, ArrayList<String> data);
     void checkIcons(Context context);
     void setScheduleCheck(Context context);
 }
