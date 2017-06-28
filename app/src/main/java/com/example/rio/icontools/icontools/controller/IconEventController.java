@@ -44,7 +44,7 @@ import rx.schedulers.Schedulers;
  * 4.下载失败定时再重新下载的处理
  */
 
-public class IconEventController implements IconBo{
+public class IconEventController implements IconEvent{
     private static final long DEFAULT_INTERVAL_CHECK_TIME = 1000 * 60 * 60 * 24 * 3;
     private static final long INTERVAL_CHECK_TIME = DEFAULT_INTERVAL_CHECK_TIME;
     private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3;
@@ -389,7 +389,7 @@ public class IconEventController implements IconBo{
  * Created by huangminzhi on 17-6-20.
  * 客户端主要逻辑接口
  */
-interface IconBo {
+interface IconEvent {
     void pullIcon(Context context, String data);
     void updateIcons(Context context, ArrayList<String> data);
     void checkIcons(Context context);
