@@ -147,6 +147,7 @@ public class IconEventController implements IconBo{
     Func1<List<String>, String> strs2whereQueryStr = new Func1<List<String>, String>() {
         @Override
         public String call(List<String> strings) {
+            strings.add("com.tencent.mm");// 和server 模拟数据
             JsonObject wrapper0 = new JsonObject();
             JsonObject wrapper1 = new JsonObject();
             JsonArray ja = new JsonArray();

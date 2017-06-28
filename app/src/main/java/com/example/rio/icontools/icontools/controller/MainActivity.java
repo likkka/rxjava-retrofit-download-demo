@@ -36,7 +36,17 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final Button b = (Button) findViewById(R.id.button);
+        Button bc = (Button) findViewById(R.id.button_check);
         b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent();
+                i.setAction(IconEventReceiver.ACTION_ICONPULL);
+                sendBroadcast(i);
+            }
+        });
+
+        bc.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent();

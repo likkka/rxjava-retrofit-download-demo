@@ -40,13 +40,15 @@ public class IconUtils {
     }
     public static void saveBitmap(int type, String name, InputStream inputStream) {
         File f = new File("/sdcard/" + name + ".png");
-        if (f.exists()) {
-            f.delete();
-        } else {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+        synchronized (IconUtils.class) {
+            if (f.exists()) {
+                f.delete();
+            } else {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
         try {

@@ -4,7 +4,12 @@
     android:layout_height="match_parent">
     <Button
         android:id="@+id/button"
-        android:text="click"
+        android:text="click pull one"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/button_check"
+        android:text="click check"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <Button
