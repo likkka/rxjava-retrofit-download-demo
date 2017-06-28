@@ -24,7 +24,7 @@ public class IconEventReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (TextUtils.equals(action, ACTION_ICONPULL)) {
             if (pkgName == null) {
-                pkgName = "com.ruguoapp.jike";
+                pkgName = "com.tencent.mm";
             }
             IconEventController.getInstance().pullIcon(context, pkgName);
         } else if (TextUtils.equals(action, ACTION_ICONCHECK)) {

@@ -280,7 +280,7 @@ public class IconEventController implements IconBo{
     private Func1<List, Boolean> ifListValiedF = new Func1<List, Boolean>() {
         @Override
         public Boolean call(List list) {
-            return list != null && list.isEmpty();
+            return list != null && (!list.isEmpty());
         }
     };
 

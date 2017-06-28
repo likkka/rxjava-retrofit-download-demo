@@ -20,6 +20,7 @@ public class IconRetrofit {
     private static final String BASE_URL_DEBUG = "http://172.17.140.199:92/v1/api/schema/";
 
 
+
     public IconRetrofit() {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         if (isDebug) {
@@ -31,7 +32,7 @@ public class IconRetrofit {
         OkHttpClient client = httpClient.build();
 
         Retrofit.Builder builder = new Retrofit.Builder();
-        builder.baseUrl(BASE_URL)
+        builder.baseUrl(BASE_URL_DEBUG)
                 .client(client)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
                 .addConverterFactory(InputStreamConverterFactory.create())
