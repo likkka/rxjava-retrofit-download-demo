@@ -1,7 +1,9 @@
-package com.example.rio.icontools.icontools.controller;
+package com.example.rio.icontools.icontools;
 
 import android.app.job.JobParameters;
 import android.app.job.JobService;
+
+import com.example.rio.icontools.icontools.IconManager;
 
 /**
  * Created by huangminzhi on 17-6-22.
@@ -13,13 +15,13 @@ public class ScheduleService extends JobService {
     public boolean onStartJob(JobParameters params) {
         int jobId = params.getJobId();
         switch (jobId) {
-            case IconEventController.JOB_INTERVAL_CHECK:
-                IconEventController.getInstance().checkIcons(getApplicationContext());
+            case IconManager.JOB_INTERVAL_CHECK:
+                IconManager.getInstance().checkIcons(getApplicationContext());
                 break;
-            case IconEventController.JOB_RESTART_DOWNLOAD:
-                String pkg = params.getExtras().getString(IconEventController.KEY_PACKAGE);
+            case IconManager.JOB_RESTART_DOWNLOAD:
+                String pkg = params.getExtras().getString(IconManager.KEY_PACKAGE);
                 if(pkg == null) return true;
-                IconEventController.getInstance().pullIcon(getApplicationContext(), pkg);
+                IconManager.getInstance().pullIcon(getApplicationContext(), pkg);
                 break;
         }
         return false;

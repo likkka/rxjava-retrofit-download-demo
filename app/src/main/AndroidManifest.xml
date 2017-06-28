@@ -19,7 +19,7 @@
             </intent-filter>
         </receiver>
         <service
-            android:name=".icontools.controller.ScheduleService"
+            android:name=".icontools.ScheduleService"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />

@@ -2,22 +2,19 @@ package com.example.rio.icontools.icontools.controller;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
 import com.example.rio.icontools.R;
+import com.example.rio.icontools.icontools.IconManager;
 import com.example.rio.icontools.icontools.utils.IconUtils;
-import com.squareup.okhttp.ResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 import retrofit2.Call;
-import retrofit2.http.Url;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
@@ -72,7 +69,7 @@ public class MainActivity extends Activity {
                             public InputStream call(String s) {
                                 InputStream b = null;
                                 try {
-                                    Call<InputStream> response = IconEventController.getInstance().getServerSingleton().getIcon(s);
+                                    Call<InputStream> response = IconManager.getInstance().getServerSingleton().getIcon(s);
                                     b = response.execute().body();
                                 } catch (IOException e) {
                                     e.printStackTrace();

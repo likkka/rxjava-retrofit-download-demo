@@ -1,4 +1,4 @@
-package com.example.rio.icontools.icontools.controller;
+package com.example.rio.icontools.icontools;
 
 
 import android.app.job.JobInfo;
@@ -23,7 +23,6 @@ import com.example.rio.icontools.icontools.model.PreferencesLoader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +43,7 @@ import rx.schedulers.Schedulers;
  * 4.下载失败定时再重新下载的处理
  */
 
-public class IconEventController implements IconEvent{
+public class IconManager implements IconEvent{
     private static final long DEFAULT_INTERVAL_CHECK_TIME = 1000 * 60 * 60 * 24 * 3;
     private static final long INTERVAL_CHECK_TIME = DEFAULT_INTERVAL_CHECK_TIME;
     private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3;
@@ -58,13 +57,13 @@ public class IconEventController implements IconEvent{
     JobScheduler jobScheduler = null;
     public static boolean DEBUG = true;
 
-    private IconEventController() {
+    private IconManager() {
     }
-    public static IconEventController getInstance() {
+    public static IconManager getInstance() {
         return SingletonHolder.INSTANCE;
     }
     private static class SingletonHolder {
-        static IconEventController INSTANCE = new IconEventController();
+        static IconManager INSTANCE = new IconManager();
     }
 
     @Override

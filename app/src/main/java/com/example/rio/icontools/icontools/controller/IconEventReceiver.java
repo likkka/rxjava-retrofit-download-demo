@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 
+import com.example.rio.icontools.icontools.IconManager;
+
 /**
  * Created by huangminzhi on 17-6-20.
  */
@@ -26,11 +28,11 @@ public class IconEventReceiver extends BroadcastReceiver {
             if (pkgName == null) {
                 pkgName = "com.tencent.mm";
             }
-            IconEventController.getInstance().pullIcon(context, pkgName);
+            IconManager.getInstance().pullIcon(context, pkgName);
         } else if (TextUtils.equals(action, ACTION_ICONCHECK)) {
-            IconEventController.getInstance().checkIcons(context);
+            IconManager.getInstance().checkIcons(context);
         } else if (TextUtils.equals(action, Intent.ACTION_BOOT_COMPLETED)) {
-            IconEventController.getInstance().setScheduleCheck(context);
+            IconManager.getInstance().setScheduleCheck(context);
         }
     }
 }

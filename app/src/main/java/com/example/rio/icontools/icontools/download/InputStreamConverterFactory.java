@@ -1,7 +1,5 @@
-package com.example.rio.icontools.icontools.utils;
+package com.example.rio.icontools.icontools.download;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.support.annotation.Nullable;
 
 import java.io.IOException;
@@ -9,7 +7,6 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Converter;
 import retrofit2.Retrofit;
