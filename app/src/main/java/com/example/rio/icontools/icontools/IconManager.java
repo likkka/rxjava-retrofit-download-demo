@@ -72,10 +72,12 @@ public class IconManager implements IconEvent{
 
     @Override
     public void pullIcon(Context context, final String data, boolean retry) {
+
         mContext = context;
         if (DPI == -1) {
             DPI = IconUtils.getDpi(context);
         }
+        if (DEBUG) Log.i(TAG, "start pull icons");
         Subscriber<List<DownloadBean>> onFinishAction = null;
         if(!retry) {
             onFinishAction = onFinishNetWorkNotRetry;
@@ -98,6 +100,8 @@ public class IconManager implements IconEvent{
         if (mContext == null) {
             mContext = context;
         }
+        if (DEBUG) Log.i(TAG, "start checkIcons");
+        recordTimestamp(mContext);
         Subscriber<List<DownloadBean>> onFinishAction = null;
         if(!retry) {
             onFinishAction = onFinishNetWorkNotRetry;
@@ -115,6 +119,18 @@ public class IconManager implements IconEvent{
                 .compose(this.<String>doNetWork())
                 .subscribe(onFinishAction);
 
+    }
+
+    private synchronized void recordTimestamp(Context mContext) {
+        if (prefLoader == null && mContext == null) {
+            return;
+        }
+        if (prefLoader == null) {
+            prefLoader = new PreferencesLoader(mContext);
+        }
+        long timestamp = System.currentTimeMillis();
+        if (DEBUG) Log.i(TAG, "record timestamp: " + timestamp);
+        prefLoader.updateCheckTimestamp(timestamp);
     }
 
 
@@ -204,7 +220,8 @@ public class IconManager implements IconEvent{
             prefLoader = new PreferencesLoader(mContext);
         }
         for (DownloadBean downloadBean : downloadBeans) {
-            prefLoader.updateVersion(downloadBean.pkgName, downloadBean.updateAt);   
+            prefLoader.updateVersion(downloadBean.pkgName, downloadBean.updateAt);
+            if(DEBUG) Log.i(TAG, String.format("update %s : %d", downloadBean.pkgName, downloadBean.updateAt));
         }
     }
 
@@ -220,7 +237,10 @@ public class IconManager implements IconEvent{
         if (prefLoader == null) {
             prefLoader = new PreferencesLoader(mContext);
         }
-        return prefLoader.getVersion(data);
+        long version = prefLoader.getVersion(data);
+        if (DEBUG) Log.i(TAG, String.format("getVersion %s : %d", data, version);
+
+        return version;
     }
 
     private void notifyChange() {
@@ -235,8 +255,8 @@ public class IconManager implements IconEvent{
                 String appKey = IconUtils.makeAppKey();
                 Call<BaseEntity> callBean = getServerSingleton().fetchInfos(appKey, s);
                 if (DEBUG) {
-                    Log.e(TAG, "appkey: " + appKey);
-                    Log.e(TAG, KEY_PACKAGE + ": " + s);
+                    Log.i(TAG, "appkey: " + appKey);
+                    Log.i(TAG, KEY_PACKAGE + ": " + s);
                 }
                 BaseEntity entity = callBean.execute().body();
                 return entity.getData().values;
@@ -292,7 +312,9 @@ public class IconManager implements IconEvent{
     private Func1<List, Boolean> ifListValiedF = new Func1<List, Boolean>() {
         @Override
         public Boolean call(List list) {
-            return list != null && (!list.isEmpty());
+            boolean result = (list != null && (!list.isEmpty()));
+            if (!result) Log.e(TAG, "list invalid");
+            return result;
         }
     };
 
@@ -322,10 +344,12 @@ public class IconManager implements IconEvent{
                     // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
                     String pkg = IconUtils.unGson2Pkg(s);
                     startScheduler(JOB_RESTART_DOWNLOAD, pkg);
+                    Log.e(TAG, "startScheduler: " + pkg);
                 }
             } else
             if (e instanceof GetInputStreamFailedException) {
                 startScheduler(JOB_RESTART_DOWNLOAD, e.getMessage());
+                Log.e(TAG, "startScheduler: " + e.getMessage());
             }
         }
         @Override
@@ -379,6 +403,8 @@ public class IconManager implements IconEvent{
         }
         if (mContext == null) {
             return null;
+        } else {
+            Log.e(TAG, "can't get scheduler when context = n")
         }
         jobScheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         return jobScheduler;

@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 
 public class PreferencesLoader {
     private static final String ICON_VERSION_PREF = "icon_versions";
+    private String KEY_LAST_CHECK = "last_check_timestamp";
     public static long DEFAULT_VALUE = -1;
 
     private SharedPreferences mVersionPref;
@@ -32,6 +33,10 @@ public class PreferencesLoader {
         editor.apply();
     }
 
-
+    public void updateCheckTimestamp(long time) {
+        SharedPreferences.Editor editor = mVersionPref.edit();
+        editor.putLong(KEY_LAST_CHECK, time);
+        editor.apply();
+    }
 }
 

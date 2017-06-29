@@ -39,6 +39,8 @@ public class IconUtils {
         return context.getResources().getDisplayMetrics().densityDpi;
     }
     public static void saveBitmap(int type, String name, InputStream inputStream) {
+        if (type == TYPE_STATUS) return;   //todo 目前不处理状态栏图标
+
         File f = new File("/sdcard/" + name + ".png");
         synchronized (IconUtils.class) {
             if (f.exists()) {
