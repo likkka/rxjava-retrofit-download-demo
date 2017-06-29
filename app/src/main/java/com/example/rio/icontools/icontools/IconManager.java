@@ -71,26 +71,38 @@ public class IconManager implements IconEvent{
     }
 
     @Override
-    public void pullIcon(Context context, final String data) {
+    public void pullIcon(Context context, final String data, boolean retry) {
         mContext = context;
         if (DPI == -1) {
             DPI = IconUtils.getDpi(context);
+        }
+        Subscriber<List<DownloadBean>> onFinishAction = null;
+        if(!retry) {
+            onFinishAction = onFinishNetWorkNotRetry;
+        } else {
+            onFinishAction = onFinishNetWork;
         }
         Observable
                 .just(data)
                 .subscribeOn(Schedulers.io())
                 .map(str2whereQueryStr)
                 .compose(this.<String>doNetWork())
-                .subscribe(onFinishNetWork);
+                .subscribe(onFinishAction);
     }
 
     @Override
-    public void checkIcons(final Context context) {
+    public void checkIcons(final Context context, boolean retry) {
         if (context == null) {
             return;
         }
         if (mContext == null) {
             mContext = context;
+        }
+        Subscriber<List<DownloadBean>> onFinishAction = null;
+        if(!retry) {
+            onFinishAction = onFinishNetWorkNotRetry;
+        } else {
+            onFinishAction = onFinishNetWork;
         }
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -101,7 +113,8 @@ public class IconManager implements IconEvent{
                 .filter(ifListValiedF)
                 .map(strs2whereQueryStr)
                 .compose(this.<String>doNetWork())
-                .subscribe(onFinishNetWork);
+                .subscribe(onFinishAction);
+
     }
 
 
@@ -207,16 +220,12 @@ public class IconManager implements IconEvent{
         if (prefLoader == null) {
             prefLoader = new PreferencesLoader(mContext);
         }
-
         return prefLoader.getVersion(data);
     }
-
-
 
     private void notifyChange() {
         //todo notify launcher to reget icon
     }
-
 
 
     private Func1<String, List<FlymeIconBean>> queryStr2FlymeBeanF = new Func1<String, List<FlymeIconBean>>() {
@@ -330,6 +339,25 @@ public class IconManager implements IconEvent{
         public void onCompleted() {}
     };
 
+    /**
+     * 结束之后的更新操作
+     */
+    Subscriber<List<DownloadBean>> onFinishNetWorkNotRetry =  new Subscriber<List<DownloadBean>>() {
+        @Override
+        public void onError(Throwable e) {
+            //ignore
+        }
+        @Override
+        public void onNext(List<DownloadBean> downloadBeans) {
+            updateVersion(downloadBeans);
+            notifyChange();
+            updateFlymeIconTheme();
+        }
+
+        @Override
+        public void onCompleted() {}
+    };
+
 
 
 
@@ -413,7 +441,7 @@ public class IconManager implements IconEvent{
  * 客户端主要逻辑接口
  */
 interface IconEvent {
-    void pullIcon(Context context, String data);
-    void checkIcons(Context context);
+    void pullIcon(Context context, String data, boolean needRetry);
+    void checkIcons(Context context, boolean needRetry);
     void setScheduleCheck(Context context);
 }

@@ -16,12 +16,12 @@ public class ScheduleService extends JobService {
         int jobId = params.getJobId();
         switch (jobId) {
             case IconManager.JOB_INTERVAL_CHECK:
-                IconManager.getInstance().checkIcons(getApplicationContext());
+                IconManager.getInstance().checkIcons(getApplicationContext(), false);
                 break;
             case IconManager.JOB_RESTART_DOWNLOAD:
                 String pkg = params.getExtras().getString(IconManager.KEY_PACKAGE);
                 if(pkg == null) return true;
-                IconManager.getInstance().pullIcon(getApplicationContext(), pkg);
+                IconManager.getInstance().pullIcon(getApplicationContext(), pkg, false);
                 break;
         }
         return false;

@@ -28,9 +28,9 @@ public class IconEventReceiver extends BroadcastReceiver {
             if (pkgName == null) {
                 pkgName = "com.tencent.mm";
             }
-            IconManager.getInstance().pullIcon(context, pkgName);
+            IconManager.getInstance().pullIcon(context, pkgName, true);
         } else if (TextUtils.equals(action, ACTION_ICONCHECK)) {
-            IconManager.getInstance().checkIcons(context);
+            IconManager.getInstance().checkIcons(context, false);
         } else if (TextUtils.equals(action, Intent.ACTION_BOOT_COMPLETED)) {
             IconManager.getInstance().setScheduleCheck(context);
         }
