@@ -238,7 +238,7 @@ public class IconManager implements IconEvent{
             prefLoader = new PreferencesLoader(mContext);
         }
         long version = prefLoader.getVersion(data);
-        if (DEBUG) Log.i(TAG, String.format("getVersion %s : %d", data, version);
+        if (DEBUG) Log.i(TAG, String.format("getVersion %s : %d", data, version));
 
         return version;
     }
@@ -404,7 +404,7 @@ public class IconManager implements IconEvent{
         if (mContext == null) {
             return null;
         } else {
-            Log.e(TAG, "can't get scheduler when context = n")
+            Log.e(TAG, "can't get scheduler when context = n");
         }
         jobScheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         return jobScheduler;
