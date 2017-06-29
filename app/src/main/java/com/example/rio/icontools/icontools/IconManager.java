@@ -16,6 +16,8 @@ import android.util.Log;
 import com.example.rio.icontools.icontools.bean.BaseEntity;
 import com.example.rio.icontools.icontools.bean.DownloadBean;
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
+import com.example.rio.icontools.icontools.download.FetchUrlFailedException;
+import com.example.rio.icontools.icontools.download.GetInputStreamFailedException;
 import com.example.rio.icontools.icontools.download.IconRetrofit;
 import com.example.rio.icontools.icontools.utils.IconUtils;
 import com.example.rio.icontools.icontools.download.ServerApi;
@@ -28,6 +30,7 @@ import java.util.List;
 
 import retrofit2.Call;
 import rx.Observable;
+import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -50,6 +53,7 @@ public class IconManager implements IconEvent{
     public static final int JOB_INTERVAL_CHECK = 1;
     public static final int JOB_RESTART_DOWNLOAD = 2;
     public static final String KEY_PACKAGE = "packageName";
+    private String KEY_IN = "$in";
     private static final String TAG = "IconEventController";
     private Context mContext = null;
     private static volatile int DPI = -1;
@@ -76,13 +80,8 @@ public class IconManager implements IconEvent{
                 .just(data)
                 .subscribeOn(Schedulers.io())
                 .map(str2whereQueryStr)
-                .map(queryStr2FlymeBeanF)
-                .filter(ifListValiedF)
-                .map(flymeBean2DownloadBeansF)
-                .filter(ifListValiedF)
-                .doOnNext(saveDownloadBitmapA)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(finishA);
+                .compose(this.<String>doNetWork())
+                .subscribe(onFinishNetWork);
     }
 
     @Override
@@ -101,14 +100,28 @@ public class IconManager implements IconEvent{
                 .subscribeOn(Schedulers.io())
                 .filter(ifListValiedF)
                 .map(strs2whereQueryStr)
-                .map(queryStr2FlymeBeanF)
+                .compose(this.<String>doNetWork())
+                .subscribe(onFinishNetWork);
+    }
+
+
+    /**
+     * 整合网络下载事件
+     * @return
+     */
+    private Observable.Transformer<String, List<DownloadBean>> doNetWork() {
+        return new Observable.Transformer<String, List<DownloadBean>>() {
+            @Override
+            public Observable<List<DownloadBean>> call(Observable<String> tObservable) {
+                return tObservable
+                        .map(queryStr2FlymeBeanF)
                 .map(flymeBean2DownloadBeansF)
                 .filter(ifListValiedF)
                 .doOnNext(saveDownloadBitmapA)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(finishA);
+                .observeOn(AndroidSchedulers.mainThread());
+            }
+        };
     }
-
 
     /**
      * 获取包名列表
@@ -146,7 +159,7 @@ public class IconManager implements IconEvent{
             JsonObject wrapper1 = new JsonObject();
             JsonArray ja = new JsonArray();
             for (String s : strings) ja.add(s);
-            wrapper1.add("$in", ja);
+            wrapper1.add(KEY_IN, ja);
             wrapper0.add(KEY_PACKAGE, wrapper1);
             String where = wrapper0.toString();
             return where;
@@ -219,13 +232,8 @@ public class IconManager implements IconEvent{
                 BaseEntity entity = callBean.execute().body();
                 return entity.getData().values;
             } catch (Exception e) {
-                if (!s.contains("$in")) {
-                    // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
-                    String pkg = IconUtils.unGson2Pkg(s);
-                    startScheduler(JOB_RESTART_DOWNLOAD, pkg);
-                }
                 e.printStackTrace();
-                return null;
+                throw new FetchUrlFailedException(s);
             }
         }
     };
@@ -263,8 +271,8 @@ public class IconManager implements IconEvent{
                         bitmapBean.pkgName = b.getPackageName();
                         result.add(bitmapBean);
                     } catch (Exception e) {
-                        startScheduler(JOB_RESTART_DOWNLOAD, b.getPackageName());
                         e.printStackTrace();
+                        throw new GetInputStreamFailedException(b.getIconL());
                     }
                 }
             }
@@ -293,15 +301,36 @@ public class IconManager implements IconEvent{
         }
     };
 
-
-    Action1<List<DownloadBean>> finishA = new Action1<List<DownloadBean>>() {
+    /**
+     * 结束之后的更新操作
+     */
+    Subscriber<List<DownloadBean>> onFinishNetWork =  new Subscriber<List<DownloadBean>>() {
         @Override
-        public void call(List<DownloadBean> downloadBeans) {
+        public void onError(Throwable e) {
+            if (e instanceof FetchUrlFailedException) {
+                String s = e.getMessage();
+                if (!s.contains(KEY_IN)) {
+                    // TODO: 17-6-27 定期检查更新失败暂时不做下载失败处理
+                    String pkg = IconUtils.unGson2Pkg(s);
+                    startScheduler(JOB_RESTART_DOWNLOAD, pkg);
+                }
+            } else
+            if (e instanceof GetInputStreamFailedException) {
+                startScheduler(JOB_RESTART_DOWNLOAD, e.getMessage());
+            }
+        }
+        @Override
+        public void onNext(List<DownloadBean> downloadBeans) {
             updateVersion(downloadBeans);
             notifyChange();
             updateFlymeIconTheme();
         }
+
+        @Override
+        public void onCompleted() {}
     };
+
+
 
 
     private void updateFlymeIconTheme() {
