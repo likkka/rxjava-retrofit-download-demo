@@ -16,6 +16,7 @@ import android.util.Log;
 import com.example.rio.icontools.icontools.bean.BaseEntity;
 import com.example.rio.icontools.icontools.bean.DownloadBean;
 import com.example.rio.icontools.icontools.bean.FlymeIconBean;
+import com.example.rio.icontools.icontools.controller.NotifyIconChangeHelper;
 import com.example.rio.icontools.icontools.download.FetchUrlFailedException;
 import com.example.rio.icontools.icontools.download.GetInputStreamFailedException;
 import com.example.rio.icontools.icontools.download.IconRetrofit;
@@ -243,8 +244,19 @@ public class IconManager implements IconEvent{
         return version;
     }
 
-    private void notifyChange() {
-        //todo notify launcher to reget icon
+
+
+    private void notifyChange(List<DownloadBean> downloadBeans) {
+        if (mContext == null) {
+            Log.e(TAG, "send broadcast when context = null");
+            return;
+        }
+        ArrayList<String> packages = new ArrayList<>(downloadBeans.size());
+        for (DownloadBean bean : downloadBeans) {
+            packages.add(bean.pkgName);
+        }
+        NotifyIconChangeHelper helper = new NotifyIconChangeHelper();
+        helper.sendNotify(mContext, packages);
     }
 
 
@@ -355,7 +367,7 @@ public class IconManager implements IconEvent{
         @Override
         public void onNext(List<DownloadBean> downloadBeans) {
             updateVersion(downloadBeans);
-            notifyChange();
+            notifyChange(downloadBeans);
             updateFlymeIconTheme();
         }
 
@@ -374,7 +386,7 @@ public class IconManager implements IconEvent{
         @Override
         public void onNext(List<DownloadBean> downloadBeans) {
             updateVersion(downloadBeans);
-            notifyChange();
+            notifyChange(downloadBeans);
             updateFlymeIconTheme();
         }
 
