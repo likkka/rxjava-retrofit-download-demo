@@ -1,6 +1,8 @@
 package com.example.rio.icontools.icontools.utils;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -28,6 +30,7 @@ public class IconUtils {
     public static final String APP_KEY = "de14a520d8c910668bf177e60eee650d";
     public static final int TYPE_LAUNCHER = 0;
     public static final int TYPE_STATUS = 1;
+    private static final String ICON_DIR = "/sdcard/Customize/.FlymeIcon";
     protected static MessageDigest messagedigest = null;
     public static final String TAG = "IconUtils";
     private final static String[] hexDigits = { "0", "1", "2", "3", "4", "5",
@@ -41,18 +44,28 @@ public class IconUtils {
     public static void saveBitmap(int type, String name, InputStream inputStream) {
         if (type == TYPE_STATUS) return;   //todo 目前不处理状态栏图标
 
-        File f = new File("/sdcard/" + name + ".png");
+        File f = null;
         synchronized (IconUtils.class) {
+            File dir = new File(ICON_DIR);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            } else if (!dir.isDirectory()) {
+                dir.delete();
+                dir.mkdirs();
+            }
+            f = new File(ICON_DIR + "/" + name + ".png");
             if (f.exists()) {
                 f.delete();
             } else {
                 try {
                     f.createNewFile();
                 } catch (IOException e) {
+                    Log.e(TAG, "failed to create png file");
                     e.printStackTrace();
                 }
             }
         }
+        if (f == null) return;
         try {
             FileOutputStream fos = new FileOutputStream(f);
             int bytesRead = 0;
@@ -151,5 +164,19 @@ public class IconUtils {
         jo.addProperty("packageName", "com.meizu.launcher");
         String s = jo.toString();
         System.out.print("test: " + unGson2Pkg(s));
+    }
+
+    public static String parseApkPackageName(Context context, String apkFilePath){
+        PackageManager packageManager = context.getPackageManager();
+        PackageInfo packageInfo = packageManager.getPackageArchiveInfo(apkFilePath, 0);
+        if(packageInfo != null){
+            packageInfo.applicationInfo.sourceDir = apkFilePath;
+            packageInfo.applicationInfo.publicSourceDir = apkFilePath;
+            String packageName = packageInfo.packageName;
+            return packageName;
+        } else {
+            Log.e(TAG, "parse failed: " + apkFilePath);
+        }
+        return null;
     }
 }

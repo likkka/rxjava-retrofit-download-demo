@@ -315,6 +315,8 @@ public class IconManager implements IconEvent{
                         e.printStackTrace();
                         throw new GetInputStreamFailedException(b.getIconL());
                     }
+                } else {
+                    Log.i(TAG, String.format("skip %s ,version same", b.getPackageName()));
                 }
             }
             return result;
@@ -414,9 +416,8 @@ public class IconManager implements IconEvent{
             return jobScheduler;
         }
         if (mContext == null) {
-            return null;
-        } else {
             Log.e(TAG, "can't get scheduler when context = n");
+            return null;
         }
         jobScheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         return jobScheduler;
