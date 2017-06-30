@@ -26,6 +26,7 @@ import com.example.rio.icontools.icontools.model.PreferencesLoader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,9 +49,9 @@ import rx.schedulers.Schedulers;
  */
 
 public class IconManager implements IconEvent{
-    private static final long DEFAULT_INTERVAL_CHECK_TIME = 1000 * 60 * 60 * 24 * 3;
+    private static final long DEFAULT_INTERVAL_CHECK_TIME = 1000 * 60 * 60 * 24 * 3; //3天
     private static final long INTERVAL_CHECK_TIME = DEFAULT_INTERVAL_CHECK_TIME;
-    private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3;
+    private static final long INTERVAL_REDOWNLOAD_TIME = 1000* 60 *3; //3 分钟
     public static final int JOB_INTERVAL_CHECK = 1;
     public static final int JOB_RESTART_DOWNLOAD = 2;
     public static final String KEY_PACKAGE = "packageName";
@@ -369,8 +370,8 @@ public class IconManager implements IconEvent{
         @Override
         public void onNext(List<DownloadBean> downloadBeans) {
             updateVersion(downloadBeans);
+            updateFlymeIconTheme(downloadBeans);
             notifyChange(downloadBeans);
-            updateFlymeIconTheme();
         }
 
         @Override
@@ -389,7 +390,7 @@ public class IconManager implements IconEvent{
         public void onNext(List<DownloadBean> downloadBeans) {
             updateVersion(downloadBeans);
             notifyChange(downloadBeans);
-            updateFlymeIconTheme();
+            updateFlymeIconTheme(downloadBeans);
         }
 
         @Override
@@ -399,15 +400,17 @@ public class IconManager implements IconEvent{
 
 
 
-    private void updateFlymeIconTheme() {
+    private void updateFlymeIconTheme(List<DownloadBean> downloadBeans) {
         try {
-            //更新configuration，以便清除主题数据，各个应用会重走生命周期，其效果类似于，在设置里变更字体大小或变更语言时一样
-//            IActivityManager am = ActivityManagerNative.getDefault();
-//            Configuration config = am.getConfiguration();
-//            config.configurationExt.fireThemeChange();
-//            am.updateConfiguration(config);
+            ArrayList<String> packages = new ArrayList<>(downloadBeans.size());
+            for (DownloadBean bean : downloadBeans) {
+                packages.add(bean.pkgName);
+                Class clazz = Class.forName("android.app.ApplicationPackageManager");
+                Method m = clazz.getMethod("clearIconCache", String.class);
+                m.invoke(null, bean.pkgName);
+            }
         } catch (Exception e) {
-            //...
+            Log.e(TAG, "updateFlymeIconTheme failed");
         }
     }
 
@@ -432,6 +435,9 @@ public class IconManager implements IconEvent{
         JobInfo.Builder builder = null;
         switch (jobId) {
             case JOB_INTERVAL_CHECK:
+                if (scheduler.getPendingJob(JOB_INTERVAL_CHECK) != null) {
+                    return; //已有
+                }
                 builder = new JobInfo.Builder(JOB_INTERVAL_CHECK, cn);
                 builder.setPeriodic(INTERVAL_CHECK_TIME);
                 builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
