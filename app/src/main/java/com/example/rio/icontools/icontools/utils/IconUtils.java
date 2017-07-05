@@ -167,14 +167,19 @@ public class IconUtils {
     }
 
     public static String parseApkPackageName(Context context, String apkFilePath){
-        PackageManager packageManager = context.getPackageManager();
-        PackageInfo packageInfo = packageManager.getPackageArchiveInfo(apkFilePath, 0);
-        if(packageInfo != null){
-            packageInfo.applicationInfo.sourceDir = apkFilePath;
-            packageInfo.applicationInfo.publicSourceDir = apkFilePath;
-            String packageName = packageInfo.packageName;
-            return packageName;
-        } else {
+        try {
+            PackageManager packageManager = context.getPackageManager();
+            PackageInfo packageInfo = packageManager.getPackageArchiveInfo(apkFilePath, 0);
+            if (packageInfo != null) {
+                packageInfo.applicationInfo.sourceDir = apkFilePath;
+                packageInfo.applicationInfo.publicSourceDir = apkFilePath;
+                String packageName = packageInfo.packageName;
+                return packageName;
+            } else {
+                Log.e(TAG, "parse failed: " + apkFilePath);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             Log.e(TAG, "parse failed: " + apkFilePath);
         }
         return null;

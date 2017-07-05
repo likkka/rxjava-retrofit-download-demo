@@ -3,6 +3,7 @@ package com.example.rio.icontools.icontools.controller;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -13,6 +14,8 @@ import com.example.rio.icontools.icontools.utils.IconUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 import retrofit2.Call;
 import rx.Observable;
@@ -26,6 +29,13 @@ import rx.schedulers.Schedulers;
  */
 
 public class MainActivity extends Activity {
+    public static final String ACTION_ICONCHANGE = "com.meizu.flyme.launcher.CHANGEICON";
+    private static final String CHANGETYPE = "changeType";
+    private static final int TYPE_ICON = 0;
+    private static final int TYPE_TITLE = 1;
+    private static final int ITEM_TYPE_APPLICATION = 0;
+    public static final String ITEMTYPE = "itemType";
+    public static final String ICONPACKAGE = "iconPackage";
     ImageView image;
     Button loadpic;
     @Override
@@ -49,6 +59,27 @@ public class MainActivity extends Activity {
                 Intent i = new Intent();
                 i.setAction(IconEventReceiver.ACTION_ICONCHECK);
                 sendBroadcast(i);
+//                String pkgName = "com.android.browser";
+//                try {
+//                    Class clazz = Class.forName("android.content.pm.PackageManager");
+//                    Method m = clazz.getMethod("clearIconCache", String.class);
+//                    m.invoke(getPackageManager(), pkgName);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    Log.e("riko", "updateFlymeIconTheme failed");
+//                }
+//
+//                ArrayList<String> strs = new ArrayList<>();
+//                strs.add(pkgName);
+//
+//                Intent intent = new Intent(ACTION_ICONCHANGE);
+//                intent.putStringArrayListExtra(ICONPACKAGE, strs);
+//                intent.putExtra(CHANGETYPE, TYPE_ICON);
+//                intent.putExtra(ITEMTYPE, ITEM_TYPE_APPLICATION);
+//
+//                sendBroadcast(intent);
+
+
             }
         });
 

@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
@@ -402,12 +403,15 @@ public class IconManager implements IconEvent{
 
     private void updateFlymeIconTheme(List<DownloadBean> downloadBeans) {
         try {
+            PackageManager manager = mContext.getPackageManager();
             ArrayList<String> packages = new ArrayList<>(downloadBeans.size());
             for (DownloadBean bean : downloadBeans) {
-                packages.add(bean.pkgName);
-                Class clazz = Class.forName("android.app.ApplicationPackageManager");
-                Method m = clazz.getMethod("clearIconCache", String.class);
-                m.invoke(null, bean.pkgName);
+//                packages.add(bean.pkgName);
+//                Class clazz = Class.forName("android.app.ApplicationPackageManager");
+//                Method m = clazz.getMethod("clearIconCache", String.class);
+//                m.invoke(null, bean.pkgName);
+//                manager.clearIconCache(bean.pkgName);
+//                Log.i(TAG, String.format("clear icon cache of %s", bean.pkgName));
             }
         } catch (Exception e) {
             Log.e(TAG, "updateFlymeIconTheme failed");
@@ -435,9 +439,9 @@ public class IconManager implements IconEvent{
         JobInfo.Builder builder = null;
         switch (jobId) {
             case JOB_INTERVAL_CHECK:
-                if (scheduler.getPendingJob(JOB_INTERVAL_CHECK) != null) {
-                    return; //已有
-                }
+//                if (scheduler.getPendingJob(JOB_INTERVAL_CHECK) != null) {
+//                    return; //已有
+//                }
                 builder = new JobInfo.Builder(JOB_INTERVAL_CHECK, cn);
                 builder.setPeriodic(INTERVAL_CHECK_TIME);
                 builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
